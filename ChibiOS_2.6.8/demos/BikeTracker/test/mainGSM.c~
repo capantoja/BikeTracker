@@ -1,0 +1,179 @@
+/**********************************************************
+     ____  _ __      ______                __            
+    / __ )(_) /_____/_  __/________ ______/ /_____  _____
+   / __  / / //_/ _ \/ / / ___/ __ `/ ___/ //_/ _ \/ ___/
+  / /_/ / / ,< /  __/ / / /  / /_/ / /__/ ,< /  __/ /    
+ /_____/_/_/|_|\___/_/ /_/   \__,_/\___/_/|_|\___/_/  
+ 
+                    Version 1.0
+   
+
+
+    ChibiOS/RT - Copyright (C) 2006-2013 Giovanni Di Sirio
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+
+***********************************************************/ 
+
+#include "ch.h"
+#include "hal.h"
+#include "chprintf.h"
+#include "memstreams.h"
+#include <chstreams.h>
+#include <string.h>
+#include <stdio.h>
+             
+
+//Declaracion de threads
+static WORKING_AREA(blinker, 64);
+
+uint8_t *gps_data = NULL;
+char IMEI;     
+char url[] = "http://biketrackerserver-serversecurity.rhcloud.com/add.php";
+char apn[] = "web.vmc.net.co";
+
+
+
+/*  Thread para el led blink que indica que el sistema esta en modo RUN */
+
+static msg_t Blink_LED(void *arg) 
+{
+  (void)arg;
+  
+  while (TRUE) {
+    palSetPad(GPIOA, GPIOA_LED);     
+    chThdSleepMilliseconds(500);
+    palClearPad(GPIOA, GPIOA_LED);     
+    chThdSleepMilliseconds(500);
+  }
+  return 0;
+}
+  
+/*static SerialConfig uartCfg =
+{
+4800, // bit rate
+0,
+0,
+0,
+}; */
+
+void InicializaGSM(){
+ /* Activa GSM */
+  palSetPad(GPIOA, GPIOA_ON_GSM);
+  chThdSleepMilliseconds(3000);
+  palClearPad(GPIOA, GPIOA_ON_GSM);
+  chThdSleepMilliseconds(3000);
+
+
+}
+
+void EstablecerConexionGSM(){
+ 
+    /* bypass serial a GSM */
+  palSetPad(GPIOF, GPIOF_PIN7);    // 0 habilita serial GPS
+  palClearPad(GPIOA, GPIOA_PIN3);  // 0 habilita serial GSM
+  chThdSleepMilliseconds(10);
+  //sdWrite(&SD1, (uint8_t *) data, strlen(data));
+  chprintf((BaseSequentialStream*)&SD1, "AT\r\n");
+  chThdSleepMilliseconds(100);
+  //chprintf((BaseSequentialStream*)&SD1, "AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n");
+  //chprintf((BaseSequentialStream*)&SD1, "AT+SAPBR=3,1,"APN","web.vmc.net.co"\r\n");
+  
+
+  
+
+
+}
+  
+int VerificarConexionGSM(){
+
+return 1;
+}
+
+
+void Submitdata(char Package){
+
+
+}
+
+int main(void) {
+
+  halInit();
+  chSysInit(); 
+  //char data[] = "AT \n\r"; 
+    
+  /* Inicia el driver serial */
+  //sdStart(&SD1, &uartCfg);
+  chThdSleepMilliseconds(100);
+  
+  /* Inicializa Thread para el blink led */
+  chThdCreateStatic(blinker, sizeof(blinker), NORMALPRIO, Blink_LED, NULL);  // Blinker Thread
+  
+   /* Desactiva GPS */
+  palSetPad(GPIOA, GPIOA_ON_GPS);
+  /* Pin SAO = 0 */
+  palClearPad(GPIOB, GPIOB_PIN_SAO);
+
+  InicializaGSM();
+ // EstablecerConexionGSM();
+
+     /* bypass serial a GSM */
+  palSetPad(GPIOF, GPIOF_PIN7);    // 0 habilita serial GPS
+  palClearPad(GPIOA, GPIOA_PIN3);  // 0 habilita serial GSM
+
+  
+
+  
+  char Position;
+  char Package;
+  int connect = 0;
+
+  
+  
+  while (TRUE) {
+
+  /*connect = VerificarConexionGSM();
+
+    if(connect){
+      //Position = readGPS();         // Obtiene Posicion
+      Package = IMEI + Position;    // Arma el paquete con los datos
+      Submitdata(Package);          // Envia los datos al servidor  
+    }
+    else {
+      EstablecerConexionGSM();
+    }
+  chThdSleepMilliseconds(30000);*/
+    //EstablecerConexionGSM();
+    chThdSleepMilliseconds(5000);
+
+  //sdWrite(&SD1, (uint8_t *) data, strlen(data));
+  //chThdSleepMilliseconds(1000);
+  /* 
+  chThdSleepMilliseconds(100);
+  sdRead(&SD1, gps_data, GPS_CMD_BUF);
+
+
+  for(int i=0; i<256; i++){
+   if(gps_data[i] == '$'){
+    palClearPad(GPIOA, GPIOA_LED);
+    chThdSleepMilliseconds(500);
+
+
+   }
+   else{
+    palSetPad(GPIOA, GPIOA_LED);
+   }
+
+  }
+
+  
+  */
+  
+
+  }
+}

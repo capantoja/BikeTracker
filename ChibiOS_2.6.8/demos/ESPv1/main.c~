@@ -1,0 +1,184 @@
+
+#include "ch.h"
+#include "hal.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+char message[100];
+char buffer[100];  
+
+static WORKING_AREA(waThread1, 128);          // Declaracion del Thread para el led blink
+
+
+/*
+*  Thread para el led blink que indica que el sistema esta en modo RUN
+*/ 
+
+static msg_t Thread1(void *arg) 
+{
+  (void)arg;
+  palSetPadMode(GPIOD, GPIOD_LED5, PAL_MODE_OUTPUT_PUSHPULL);
+  
+  while (TRUE) {
+    palSetPad(GPIOD, GPIOD_LED5);       /* LED Red */
+    chThdSleepMilliseconds(500);
+    palClearPad(GPIOD, GPIOD_LED5);     
+    chThdSleepMilliseconds(500);
+  }
+  return 0;
+}
+
+
+
+/*
+ * This callback is invoked when a transmission buffer has been completely
+ * read by the driver.
+ */
+static void txend1(UARTDriver *uartp) {
+
+  (void)uartp;
+  return;
+}
+
+/*
+ * This callback is invoked when a transmission has physically completed.
+ */
+static void txend2(UARTDriver *uartp) {
+
+  (void)uartp;
+  return;
+}
+
+/*
+ * This callback is invoked on a receive error, the errors mask is passed
+ * as parameter.
+ */
+static void rxerr(UARTDriver *uartp, uartflags_t e) {
+
+  (void)uartp;
+  (void)e;
+  return;
+}
+
+/*
+ * This callback is invoked when a character is received but the application
+ * was not ready to receive it, the character is passed as parameter.
+ */
+static void rxchar(UARTDriver *uartp, uint16_t c) {
+
+  (void)uartp;
+  (void)c;
+  return;
+}
+
+/*
+ * This callback is invoked when a receive buffer has been completely written.
+ * Callback para decodificar el dato recibido por el puerto serial
+ */
+static void rxend(UARTDriver *uartp) {
+   
+   (void)uartp;
+
+
+return;
+}
+
+
+
+
+
+/*
+ * UART 6 driver configuration structure.
+ */
+static UARTConfig uart_cfg_1 = {
+  txend1,
+  txend2,
+  rxend,
+  rxchar,
+  rxerr,
+  115200,
+  0,
+  USART_CR2_LINEN,
+  0
+};
+
+/*
+ * UART 2 driver configuration structure.
+ */
+static UARTConfig uart_cfg_2 = {
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  9600,
+  0,
+  USART_CR2_LINEN,
+  0
+};
+
+
+
+int main(void) {
+
+  
+  halInit();
+  chSysInit();
+  
+
+  /* Inicializa el puerto serial UART6 C6(TX) y C7(RX) */
+  uartStart(&UARTD6, &uart_cfg_1);
+  palSetPadMode(GPIOC, 7, PAL_MODE_ALTERNATE(8));
+  palSetPadMode(GPIOC, 6, PAL_MODE_ALTERNATE(8));
+
+
+  /* Inicializa el puerto serial UART2 A2(TX) y A3(RX) */
+  uartStart(&UARTD2, &uart_cfg_2);
+  palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
+
+ 
+  /* Inicializa Thread para el blink led rojo */
+  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);  // Blinker Thread
+
+  palSetPadMode(GPIOD, GPIOD_LED6, PAL_MODE_OUTPUT_PUSHPULL);
+  
+  while (TRUE) {
+
+  /* Detiene toda operacion de los puertos seriales */   
+  uartStopReceive(&UARTD6); 
+  uartStopSend(&UARTD6);
+
+  uartStartReceive(&UARTD2, 10, message);
+  if (message[0] != 0){ 
+  /* Envia comando */
+  uartStartSend(&UARTD6, 10, message);
+
+
+  /* Lee el puerto serial 6  */ 
+  uartStartReceive(&UARTD6, 100, buffer);
+  uartStartSend(&UARTD2, 100, buffer);  
+
+   }
+
+
+  if (strstr(buffer,"OK")){
+  palSetPad(GPIOD, GPIOD_LED6);
+}
+else{
+  palClearPad(GPIOD, GPIOD_LED6);
+}
+   message[0]=0;
+  for (int i=0; i<100; i++){
+     buffer[i]=' ';
+    
+
+  }
+  
+  /* 100 Milisegundos de retardo */
+  chThdSleepMilliseconds(100); 
+  
+
+  }
+}
