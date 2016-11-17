@@ -82,7 +82,7 @@ CSRC = $(PORTSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
        $(CHIBIOS)/os/various/chprintf.c \
-       /home/lithium/Documentos/ChibiOS_2.6.8/demos/BikeTracker/test/AcelerometroV2.c
+       /home/lithium/Documentos/BikeTracker/ChibiOS_2.6.8/demos/BikeTracker/test/AcelerometroV2.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
