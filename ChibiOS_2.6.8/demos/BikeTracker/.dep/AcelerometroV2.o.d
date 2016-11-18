@@ -1,5 +1,5 @@
 build/obj/AcelerometroV2.o: \
- /home/lithium/Documentos/ChibiOS_2.6.8/demos/BikeTracker/test/AcelerometroV2.c \
+ /home/lithium/Documentos/BikeTracker/ChibiOS_2.6.8/demos/BikeTracker/test/AcelerometroV2.c \
  ../../os/kernel/include/ch.h chconf.h \
  ../../os/ports/GCC/ARMCMx/chtypes.h \
  /home/lithium/Descargas/gcc-arm-none-eabi-5_3-2016q1/lib/gcc/arm-none-eabi/5.3.1/include/stddef.h \

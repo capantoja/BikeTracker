@@ -59,7 +59,7 @@ static const I2CConfig i2cconfig = {
 void MMA8451Standby(void){
 
   txbuf[0] = CTRL_REG1; /* register address */
-  txbuf[1] = 0x0;
+  txbuf[1] = 0x18; 
   status = i2cMasterTransmitTimeout(&I2CD1, MMA8451_ADDRESS, txbuf, sizeof(txbuf), rxbuf, 0, TIME_INFINITE);
   if (status != RDY_OK){}
 
@@ -69,7 +69,7 @@ void MMA8451Active(void){
  // Activate MMA8451Q,  ODR: 6,25Hz 160mS
   chThdSleepMilliseconds(10);
   txbuf[0] = CTRL_REG1; /* register address */
-  txbuf[1] = 0x31;
+  txbuf[1] = 0x01; //0x31;
   status = i2cMasterTransmitTimeout(&I2CD1, MMA8451_ADDRESS, txbuf, sizeof(txbuf), rxbuf, 0, TIME_INFINITE);
   if (status != RDY_OK){}
 
@@ -78,30 +78,30 @@ void MMA8451Active(void){
 void init_MMA8451Q(void){
 
   MMA8451Standby();
+  //chThdSleepMilliseconds(10);
+  //txbuf[0] = CTRL_REG2; /* register address 0x2B */
+  //txbuf[1] = MODS_MASK; /* Low power mode 0x03 */
+  //status = i2cMasterTransmitTimeout(&I2CD1, MMA8451_ADDRESS, txbuf, sizeof(txbuf), rxbuf, 0, TIME_INFINITE);
+  //if (status != RDY_OK){}
+
   chThdSleepMilliseconds(10);
-  txbuf[0] = CTRL_REG2; /* register address */
-  txbuf[1] = MODS_MASK; /* Low power mode */
+  txbuf[0] = MOTION_REG; /* register address 0x15 */
+  txbuf[1] = 0xF8; //MOTION_CFG; /* Motion detection mode 0x78 */
   status = i2cMasterTransmitTimeout(&I2CD1, MMA8451_ADDRESS, txbuf, sizeof(txbuf), rxbuf, 0, TIME_INFINITE);
   if (status != RDY_OK){}
 
   chThdSleepMilliseconds(10);
-  txbuf[0] = MOTION_REG; /* register address */
-  txbuf[1] = MOTION_CFG; /* Motion detection mode */
-  status = i2cMasterTransmitTimeout(&I2CD1, MMA8451_ADDRESS, txbuf, sizeof(txbuf), rxbuf, 0, TIME_INFINITE);
-  if (status != RDY_OK){}
-
-  chThdSleepMilliseconds(10);
-  txbuf[0] = MOTION_THRES; /* register address */
-  txbuf[1] = 0x8F;         /* DBCNT = 1; THRESHOLD = 16 */
+  txbuf[0] = MOTION_THRES;         /* register address 0x17 */
+  txbuf[1] = 0x20; //0x8F;         /* DBCNT = 1; THRESHOLD = 32 */
   status = i2cMasterTransmitTimeout(&I2CD1, MMA8451_ADDRESS, txbuf, sizeof(txbuf), rxbuf, 0, TIME_INFINITE);
   if (status != RDY_OK){}
   
   chThdSleepMilliseconds(10);
-  txbuf[0] = MOTION_COUNTER; /* register address */
-  txbuf[1] = 0x0F;           /* Debounce counter = 16 */
+  txbuf[0] = MOTION_COUNTER; /* register address 0x18 */
+  txbuf[1] = 0x02; //0x0F;           /* Debounce counter = 2 */
   status = i2cMasterTransmitTimeout(&I2CD1, MMA8451_ADDRESS, txbuf, sizeof(txbuf), rxbuf, 0, TIME_INFINITE);
   if (status != RDY_OK){}
-  
+ 
   chThdSleepMilliseconds(10);
   MMA8451Active();
   
@@ -114,7 +114,7 @@ static void gpt3cb(GPTDriver *gptp) {
 
   (void)gptp;
   palClearPad(GPIOA, GPIOA_LED);
-  //chThdSleepMilliseconds(500);
+  
 }
 
 /*
@@ -142,6 +142,9 @@ int main(void) {
   palClearPad(GPIOA, GPIOA_ON_GPS);
   /* Pin SAO = 0 */
   palClearPad(GPIOB, GPIOB_PIN_SAO);
+
+  palSetPadMode(GPIOB, 0, PAL_MODE_INPUT_PULLDOWN); 
+
   /* Configura el acelerometro MMA8451Q */
   init_MMA8451Q();
   
@@ -151,22 +154,24 @@ int main(void) {
   {
    
     chThdSleepMilliseconds(100);
-    txbuf[0] = MOTION_DET;  /* register address */  
+    txbuf[0] = MOTION_DET;  // register address  
     status = i2cMasterTransmitTimeout(&I2CD1, MMA8451_ADDRESS, txbuf, sizeof(txbuf), rxbuf, 1, TIME_INFINITE);
     if (status != RDY_OK){}
     data_accel = rxbuf[0];
   
-    /* Detecta movimiento */
+    // Detecta movimiento 
     if ((data_accel >> 7) & 1) 
     {
-      palSetPad(GPIOA, GPIOA_LED);
+      
+      gptStartOneShot(&GPTD3, 100000);
+      //palClearPad(GPIOA, GPIOA_LED);
       //gptStopTimer(&GPTD3);
     }
     else 
     {
-      palClearPad(GPIOA, GPIOA_LED);
-     //gptStartOneShot(&GPTD3, 1000);
-
-    }
+      palSetPad(GPIOA, GPIOA_LED);
+     //
+    } 
+    
   }
 }
